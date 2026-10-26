@@ -102,16 +102,39 @@
     prompt.value=(prompt.value.trim()?prompt.value.trim()+' — ':'')+q;
     resourceQuery.value=''; prompt.focus();
   });
-  form.addEventListener('submit',e=>{
-    e.preventDefault(); const text=prompt.value.trim(); if(!text&&!selectedFile)return;
-    if(text)addMessage(text,'user');
-    prompt.value='';
-    let reply='وصل طلبك إلى واجهة Master Smart. لكي أجيب فعليًا وأُنشئ محتوى، يجب ربط التطبيق بخدمة ذكاء اصطناعي عبر خادم آمن.';
-    if(/مونتاج|فيديو|مقطع|مشهد/i.test(text)) reply='لتحويل فكرتك إلى مونتاج فعلي، نحتاج لاحقًا إلى ربط خدمة ذكاء اصطناعي ومصدر وسائط. حاليًا أستطيع حفظ الطلب في هذه الواجهة فقط؛ لم يتم تنزيل أو إنشاء فيديو.';
-    else if(/صورة|ارسم|تصميم/i.test(text)) reply='طلب الصورة وصل إلى الواجهة، لكن إنشاء الصور يحتاج إلى ربط خدمة توليد صور. لم يتم إنشاء صورة بعد.';
-    else if(/مرحبا|السلام عليكم|هلا|أهلًا|اهلا/i.test(text)) reply='أهلًا! أنا واجهة مساعد Master Smart التجريبية. ما الذي تريد العمل عليه؟';
-    addMessage(reply,'bot');
-  });
+  
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = prompt.value.trim();
+  if (!text) return;
+
+  addMessage(text, 'user');
+  prompt.value = '';
+
+  const loading = addMessage('جاري الاتصال بـ Gemini...', 'bot');
+
+  try {
+    const response = await fetch(
+      'https://patient-breeze-30d1.nomohammed-nm.workers.dev/',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.details || data.error || 'فشل الاتصال');
+    }
+
+    loading.textContent = data.reply || 'لم يصل رد.';
+  } catch (error) {
+    loading.textContent = 'تعذر الاتصال: ' + error.message;
+  }
+});
+
   prompt.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();form.requestSubmit();}});
 })();
 </script>
